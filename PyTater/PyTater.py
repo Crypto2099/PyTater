@@ -256,7 +256,7 @@ class PyTater:
         self.errors['pending'] = None
         try:
             res = httpx.get('https://starch.one/api/pending_blocks', timeout=10)
-        except httpx.ReadTimeout or httpx.ConnectTimeout or httpx.Timeout:
+        except:
             self.errors['pending'] = "Could not fetch pending!"
             return
 
@@ -285,7 +285,7 @@ class PyTater:
 
         try:
             res = httpx.get('https://starch.one/api/miner/' + self.miner_id, timeout=10)
-        except httpx.Timeout or httpx.ConnectTimeout:
+        except:
             self.errors['status'] = "Could not fetch status"
             return
 
@@ -373,7 +373,7 @@ class PyTater:
         self.errors['submit'] = None
         try:
             httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
-        except httpx.ReadTimeout or httpx.ConnectTimeout or httpx.Timeout:
+        except:
             self.errors['submit'] = "Could not submit block?!"
             return
 
