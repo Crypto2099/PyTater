@@ -4,6 +4,7 @@ import json.decoder
 import logging
 import os
 import random
+import textwrap
 import zlib
 from datetime import datetime
 
@@ -44,6 +45,18 @@ class colors:
     UNDERLINE = '\033[4m'
 
 
+class TaterError:
+    sync = None
+    config = None
+    pending = None
+    submit = None
+    status = None
+
+    def __dict__(self):
+        return {'config': self.config, 'sync': self.sync, 'pending': self.pending, 'submit': self.submit,
+                'status': self.status}
+
+
 class PyTater:
 
     def __init__(self, miner_id, pretty_mode, debug_mode):
@@ -67,6 +80,8 @@ class PyTater:
         self.pretty_mode = pretty_mode
         self.debug_mode = debug_mode
 
+        self.errors = {}
+
         self.run_start = datetime.now()
 
         self.get_status()
@@ -86,6 +101,7 @@ class PyTater:
         self.fix_line(f" │ New Blocks      │ {self.block_count - self.starting_blocks}")
         self.print_divider()
         self.fix_line(f" │ Lifetime Blocks │ {self.block_count}")
+
         have_pending = (len(self.pending_blocks or []))
         if have_pending:
             self.print_divider()
@@ -93,8 +109,6 @@ class PyTater:
             self.print_divider()
             self.fix_line(f" │ Blocks Pending  │ {len(self.pending_blocks or []).__str__()}")
             print(" ├─────────────────┴─────────────────────────┤ ")
-            # print()
-            # print(f"{colors.OKBLUE}" + u"\u2588" + f"{colors.ENDC}")
             pending_terminal_blocks = " │ "
             terminal_block_count = 0
             for block in self.pending_blocks or []:
@@ -114,9 +128,15 @@ class PyTater:
                     terminal_block_count = 0
             if terminal_block_count > 0:
                 print(pending_terminal_blocks + ("  " * (21 - terminal_block_count)) + "│ ")
+
+        for key, value in self.errors.items():
+            if value is not None:
+                PyTater.do_error(key, value)
+
         self.print_close()
         print()
         print(f"   {colors.OKGREEN}Press ctrl+c to stop the miner{colors.ENDC}")
+        # print(self.errors)
 
     @staticmethod
     def clear():
@@ -134,6 +154,38 @@ class PyTater:
             text += " "
         text += f"{colors.ENDC}│ "
         print(text)
+
+    @staticmethod
+    def print_undivided():
+        print(" ├───────────────────────────────────────────┤ ")
+
+    @staticmethod
+    def do_error(title, message):
+        PyTater.print_undivided()
+        max_width = 41
+        wrapped_message = textwrap.wrap(message, width=max_width)
+        formatted_title = PyTater.fill(f"!!! {title.upper()} ERROR !!!", max_width, 'center')
+        print(f" │ {colors.FAIL}{formatted_title}{colors.ENDC} │ ")
+        for line in wrapped_message:
+            formatted_line = PyTater.fill(line, max_width, 'left')
+            print(f" │ {colors.FAIL}{formatted_line}{colors.ENDC} │ ")
+
+    @staticmethod
+    def fill(line, length, align='left'):
+        line_pad = length - len(line)
+        pre_pad = 0
+        post_pad = 0
+        if align == 'right':
+            pre_pad = line_pad
+            post_pad = 0
+        elif align == 'left':
+            pre_pad = 0
+            post_pad = line_pad
+        elif align == 'center':
+            pre_pad = line_pad // 2
+            post_pad = line_pad // 2 + line_pad % 2
+
+        return f"{' ' * pre_pad}{line}{' ' * post_pad}"
 
     def print_head(self, is_closed=True):
         self.clear()
@@ -165,15 +217,19 @@ class PyTater:
 
     def get_chain_config(self):
         # logging.info("Getting chain config...")
+        self.errors['config'] = None
         try:
             res = requests.get('https://starch.one/api/blockchain_config')
         except TimeoutError:
+            # 15639bc8e9...974951272c
+            self.errors['config'] = "Could not fetch configuration!"
             if self.pretty_mode is False or self.debug_mode:
                 logging.error("Timeout fetching chain config!")
             return
         try:
             response = res.json()
         except json.decoder.JSONDecodeError:
+            self.errors['config'] = "Could not decode configuration!"
             return
 
         try:
@@ -191,11 +247,17 @@ class PyTater:
         return response
 
     def get_pending(self):
-        res = requests.get('https://starch.one/api/pending_blocks')
+        self.errors['pending'] = None
+        try:
+            res = requests.get('https://starch.one/api/pending_blocks')
+        except TimeoutError:
+            self.errors['pending'] = "Could not fetch pending!"
+            return
 
         try:
             response = res.json()
         except json.decoder.JSONDecodeError:
+            self.errors['pending'] = f"Could not decode pending!"
             return
 
         try:
@@ -211,16 +273,24 @@ class PyTater:
             return
 
     def get_status(self):
+        self.errors['status'] = None
         if self.miner_id is None:
             return
 
-        res = requests.get('https://starch.one/api/miner/' + self.miner_id)
+        try:
+            res = requests.get('https://starch.one/api/miner/' + self.miner_id)
+        except TimeoutError:
+            self.errors['status'] = "Could not fetch status"
+            return
+
         try:
             response = res.json()
         except json.decoder.JSONDecodeError:
+            self.errors['status'] = "Could not decode status"
             if self.pretty_mode is False or self.debug_mode:
                 logging.error(res)
             return
+
         try:
             self.starch_balance = response['balance']
             self.block_count = response['blocks']
@@ -249,8 +319,8 @@ class PyTater:
             end = time.time()
             elapsed = end - start
             # logging.info("Time spent syncing: "+elapsed.__str__())
-            if elapsed < 12.5:
-                time.sleep(12.5 - elapsed)
+            if elapsed < 15:
+                time.sleep(15 - elapsed)
             # time.sleep(12)
 
     # {
@@ -281,8 +351,26 @@ class PyTater:
             new_block = self.solve(self.last_block['hash'])
             self.submit_block(new_block)
 
+    # def test_error(self):
+    #     self.errors['test'] = None
+    #     try:
+    #         res = requests.post('https://starch.one/api/null')
+    #     except:
+    #         self.errors['test'] = "This is a test error! It is long!"
+    #         return
+    #
+    #     if not res.ok:
+    #         self.errors['test'] = f"{res.status_code}: {res.text}"
+    #         return
+
     def submit_block(self, new_block):
-        requests.post('https://starch.one/api/submit_block', json=new_block)
+        self.errors['submit'] = None
+        try:
+            requests.post('https://starch.one/api/submit_block', json=new_block)
+        except TimeoutError:
+            self.errors['submit'] = "Could not submit block?!"
+            return
+
         if self.pretty_mode is False or self.debug_mode:
             logging.info("New block submitted to the chain!")
 
@@ -314,6 +402,8 @@ class PyTater:
         while should_mine.is_set():
             start = time.time()
             self.mine_block()
+            # TODO: Remove later
+            # self.test_error()
             end = time.time()
             elapsed = end - start
             if elapsed < 24.5:
