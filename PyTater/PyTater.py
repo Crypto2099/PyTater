@@ -373,7 +373,7 @@ class PyTater:
         self.errors['submit'] = None
         try:
             httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
-        except httpx.WriteTimeout:
+        except httpx.ReadTimeout:
             self.errors['submit'] = "Could not submit block?!"
             return
 
