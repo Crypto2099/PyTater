@@ -225,7 +225,7 @@ class PyTater:
         # logging.info("Getting chain config...")
         self.errors['config'] = None
         try:
-            res = requests.get('https://starch.one/api/blockchain_config')
+            res = requests.get('https://starch.one/api/blockchain_config', timeout=10)
         except TimeoutError:
             # 15639bc8e9...974951272c
             self.errors['config'] = "Could not fetch configuration!"
@@ -255,7 +255,7 @@ class PyTater:
     def get_pending(self):
         self.errors['pending'] = None
         try:
-            res = requests.get('https://starch.one/api/pending_blocks')
+            res = requests.get('https://starch.one/api/pending_blocks', timeout=10)
         except TimeoutError:
             self.errors['pending'] = "Could not fetch pending!"
             return
@@ -284,7 +284,7 @@ class PyTater:
             return
 
         try:
-            res = requests.get('https://starch.one/api/miner/' + self.miner_id)
+            res = requests.get('https://starch.one/api/miner/' + self.miner_id, timeout=10)
         except TimeoutError:
             self.errors['status'] = "Could not fetch status"
             return
@@ -372,7 +372,7 @@ class PyTater:
     def submit_block(self, new_block):
         self.errors['submit'] = None
         try:
-            requests.post('https://starch.one/api/submit_block', json=new_block)
+            requests.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
         except TimeoutError:
             self.errors['submit'] = "Could not submit block?!"
             return
