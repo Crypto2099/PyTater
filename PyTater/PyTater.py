@@ -232,6 +232,12 @@ class PyTater:
             if self.pretty_mode is False or self.debug_mode:
                 logging.error("Timeout fetching chain config!")
             return
+        except httpx.ConnectTimeout:
+            # 15639bc8e9...974951272c
+            self.errors['config'] = "Could not fetch configuration!"
+            if self.pretty_mode is False or self.debug_mode:
+                logging.error("Timeout fetching chain config!")
+            return
         try:
             response = res.json()
         except json.decoder.JSONDecodeError:
@@ -257,6 +263,9 @@ class PyTater:
         try:
             res = httpx.get('https://starch.one/api/pending_blocks', timeout=10)
         except httpx.ReadTimeout:
+            self.errors['pending'] = "Could not fetch pending!"
+            return
+        except httpx.ConnectTimeout:
             self.errors['pending'] = "Could not fetch pending!"
             return
 
@@ -285,7 +294,10 @@ class PyTater:
 
         try:
             res = httpx.get('https://starch.one/api/miner/' + self.miner_id, timeout=10)
-        except httpx.ReadTimeout:
+        except httpx.Timeout:
+            self.errors['status'] = "Could not fetch status"
+            return
+        except httpx.ConnectTimeout:
             self.errors['status'] = "Could not fetch status"
             return
 
@@ -374,6 +386,9 @@ class PyTater:
         try:
             httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
         except httpx.ReadTimeout:
+            self.errors['submit'] = "Could not submit block?!"
+            return
+        except httpx.ConnectTimeout:
             self.errors['submit'] = "Could not submit block?!"
             return
 
