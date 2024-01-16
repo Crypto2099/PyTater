@@ -14,6 +14,12 @@ import sys
 import threading
 import time
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+env_miner_id = os.getenv('miner_id')
+
 N = []
 for i, n in enumerate([47, 68, 40, 40, 40, 21]):
     N.extend([i] * n)
@@ -438,7 +444,10 @@ def run(miner_id, pretty_mode, debug_mode):
     running_sync.start()
 
     while miner.valid_miner is False:
-        miner.miner_id = input("Enter your Miner ID: ")
+        if env_miner_id == None:
+            miner.miner_id = input("Enter your Miner ID: ")
+        else:
+            miner.miner_id = env_miner_id
         miner.get_status()
 
     do_mine.set()
