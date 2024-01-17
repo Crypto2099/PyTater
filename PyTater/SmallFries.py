@@ -146,9 +146,9 @@ async def run_miner():
                     new_block = solve(current_block_hash, miner_id)
                     while True:
                         submit_success = await submit_block(new_block)
-                        if not submit_success:
-                            await asyncio.sleep(10)
-                        break
+                        await asyncio.sleep(10)
+                        if submit_success:
+                            break
                     submitted_blocks += 1
                     if block_height != 0 and block_height % 10 == 0:
                         starch_balance, block_count = await get_status(miner_id)
