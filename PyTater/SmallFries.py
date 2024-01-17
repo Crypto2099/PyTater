@@ -5,6 +5,7 @@ import json
 import os
 
 from colors import random_color
+from datetime import datetime
 from dotenv import load_dotenv
 from time import sleep
 
@@ -124,25 +125,38 @@ async def submit_block(new_block):
     print("New block submitted to the chain!")
 
 async def run_miner():
+    total_runs = 0
     block_height = 0
+    submitted_blocks = 0
     while True:
-        if block_height != 0:
-            print(f'block height: {block_height}')
-        current_block_height, current_block, current_block_hash = await get_chain_config(block_height)
-        if current_block_height > block_height:
-            block_height = current_block_height
-            for miner_id in all_miners:
-                if block_height != 0 and block_height % 10 == 0:
-                    starch_balance, block_count = await get_status(miner_id)
-                    print(f'Miner Stats for Miner ID #{miner_id}:\nStarch Balance: {starch_balance}\nBlock Count: {block_count}')
-                new_block = solve(current_block_hash, miner_id)
-                await submit_block(new_block)
-                await asyncio.sleep(10)
-            pending_blocks = await get_pending()
-            if len(pending_blocks) == 0:
+        total_runs += 1
+        while True:
+            current_block_height, current_block, current_block_hash = await get_chain_config(block_height)
+            if current_block_height == 0:
                 await asyncio.sleep(10)
                 continue
-            miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
+            break
+        if current_block_height > block_height:
+            block_height = current_block_height
+            print(f'block height: {block_height}')
+            while True:
+                pending_blocks = await get_pending()
+                if len(pending_blocks) == 0:
+                    await asyncio.sleep(10)
+                    continue
+                break
+            for miner_id in all_miners:
+                miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
+                if miner_block is None:
+                    new_block = solve(current_block_hash, miner_id)
+                    await submit_block(new_block)
+                    submitted_blocks += 1
+                    await asyncio.sleep(10)
+                    if block_height != 0 and block_height % 10 == 0:
+                        starch_balance, block_count = await get_status(miner_id)
+                        print(f'Miner Stats for Miner ID #{miner_id}:\nStarch Balance: {starch_balance}\nBlock Count: {block_count}')
+        current_time = datetime.now().strftime("%m-%d-%Y %Hh%Mm%Ss UTC")
+        print(f'Miner Running.  Mining for {len(all_miners)} miner(s).\nCurrent Time: {current_time}\nSubmitted Blocks Since Starting: {submitted_blocks}\nTotal Runs: {total_runs}')
         await asyncio.sleep(35)
 
 asyncio.run(run_miner())
