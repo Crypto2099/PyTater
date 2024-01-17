@@ -63,25 +63,7 @@ def get_miner_blocks(miner_id, pending_blocks):
             break
     return miner_block, miner_block_hash
 
-def get_chain_config(previous_block_height):
-    try:
-        res = httpx.get('https://starch.one/api/blockchain_config', timeout=10)
-    except:
-        print("Could not fetch configuration!")
-        return None, None, None
-    try:
-        response = res.json()
-    except json.decoder.JSONDecodeError:
-        print("Could not decode configuration!")
-        return None, None, None
-    try:
-        if response['blockchain_size'] > previous_block_height:
-            block_height = response['blockchain_size']
-            last_block = response['last_block']
-            last_block_hash = last_block['hash']
-        return block_height, last_block, last_block_hash
-    except:
-        return None, None, None
+
 
 def mine_block(miner_block, last_block_hash):
     print("Unearthing $STRCH treasures with potato prowess... Mining spudtastic crypto gold.")
@@ -94,20 +76,19 @@ def mine_block(miner_block, last_block_hash):
 
 
 def get_chain_config(block_height):
-    if block_height == None:
-        block_height = 0
+    last_block, last_block_hash = None, None
     # logging.info("Getting chain config...")
     try:
         res = httpx.get('https://starch.one/api/blockchain_config', timeout=10)
     except:
         # 15639bc8e9...974951272c
         print("Could not fetch configuration!")
-        return None, None, None
+        return block_height, last_block, last_block_hash
     try:
         response = res.json()
     except:
         print("Could not decode configuration!")
-        return None, None, None
+        return block_height, None, None
     try:
         if response['blockchain_size'] > block_height:
             block_height = response['blockchain_size']
@@ -115,7 +96,7 @@ def get_chain_config(block_height):
             last_block_hash = last_block['hash']
             return block_height, last_block, last_block_hash
     except:
-        return None, None, None
+        return block_height, last_block, last_block_hash
 
 def solve(last_block_hash, miner_id):
     color = random_color(miner_id, last_block_hash)
@@ -140,11 +121,10 @@ def run_miner():
     block_height = 0
     starch_balance, block_count = get_status(miner_id)
     while True:
-        print(f'block height: {block_height}')
+        if block_height != 0:
+            print(f'block height: {block_height}')
         current_block_height, current_block, current_block_hash = get_chain_config(block_height)
-        if current_block_height == None:
-            pass
-        elif current_block_height > block_height:
+        if current_block_height > block_height:
             block_height = current_block_height
             new_block = solve(current_block_hash, miner_id)
             submit_block(new_block)
