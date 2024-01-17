@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import hashlib
 import httpx
