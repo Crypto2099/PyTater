@@ -1,9 +1,11 @@
+import hashlib
 import httpx
 import json
 import os
 
 from colors import random_color
 from dotenv import load_dotenv
+from time import sleep
 
 
 load_dotenv()
@@ -13,9 +15,7 @@ all_miners = [miner_id]
 
 
 
-previous_block_count = 0
-last_block_hash = None
-block_height = None
+
 
 
 
@@ -24,18 +24,18 @@ def get_status(miner_id):
         response = httpx.get(f'https://starch.one/api/miner/{miner_id}', timeout=10)
     except:
         print("Could not fetch status")
-        return
+        return None, None
     try:
         payload = response.json()
     except:
         print("Could not decode status")
-        return
+        return None, None
     try:
         starch_balance = payload['balance']
         block_count = payload['blocks']
         return starch_balance, block_count
     except:
-        return
+        return None, None
 
 def get_pending():
     try:
@@ -68,12 +68,12 @@ def get_chain_config(previous_block_height):
         res = httpx.get('https://starch.one/api/blockchain_config', timeout=10)
     except:
         print("Could not fetch configuration!")
-        return
+        return None, None, None
     try:
         response = res.json()
     except json.decoder.JSONDecodeError:
         print("Could not decode configuration!")
-        return
+        return None, None, None
     try:
         if response['blockchain_size'] > previous_block_height:
             block_height = response['blockchain_size']
@@ -81,12 +81,12 @@ def get_chain_config(previous_block_height):
             last_block_hash = last_block['hash']
         return block_height, last_block, last_block_hash
     except:
-        return
+        return None, None, None
 
 def mine_block(miner_block, last_block_hash):
     print("Unearthing $STRCH treasures with potato prowess... Mining spudtastic crypto gold.")
     if miner_block == None or last_block_hash == None:
-    if miner_block['previous_hash'] == last_block_hash:
+    #if miner_block['previous_hash'] == last_block_hash:
         print(f"My Last Block: (Hash: {last_own_block['previous_hash']}, Color: {last_own_block['color']})")
         print("We should mine a block!")
         new_block = solve(last_block_hash)
@@ -102,12 +102,12 @@ def get_chain_config(block_height):
     except:
         # 15639bc8e9...974951272c
         print("Could not fetch configuration!")
-        return
+        return None, None, None
     try:
         response = res.json()
     except json.decoder.JSONDecodeError:
         print("Could not decode configuration!")
-        return
+        return None, None, None
     try:
         if response['blockchain_size'] > block_height:
             block_height = response['blockchain_size']
@@ -115,7 +115,7 @@ def get_chain_config(block_height):
             last_block_hash = last_block['hash']
             return block_height, last_block, last_block_hash
     except:
-        return
+        return None, None, None
 
 def solve(last_block_hash, miner_id):
     color = random_color(miner_id, last_block_hash)
@@ -127,9 +127,29 @@ def solve(last_block_hash, miner_id):
     print(f"Block hash: {new_hash}")
     return {'hash': new_hash, 'color': color, 'miner_id': miner_id}
 
+def submit_block(new_block):
+    try:
+        resp = httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
+    except:
+        print("Could not submit block?!")
+        return
+    print("New block submitted to the chain!")
 
-starch_balance, block_count = get_status(miner_id)
-pending_blocks = get_pending()
-block_height, last_block, last_block_hash = get_chain_config(block_height)
-miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
-solved_block = solve(last_block_hash, miner_id)
+def run_miner():
+    global block_height, miner_block, miner_block_hash
+    block_height = 0
+    starch_balance, block_count = get_status(miner_id)
+    while True:
+        print(f'block height: {block_height}')
+        current_block_height, current_block, current_block_hash = get_chain_config(block_height)
+        if current_block_height == None:
+            pass
+        elif current_block_height > block_height:
+            block_height = current_block_height
+            new_block = solve(current_block_hash, miner_id)
+            submit_block(new_block)
+            pending_blocks = get_pending()
+            miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
+        sleep(45)
+
+run_miner()
