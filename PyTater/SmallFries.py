@@ -119,7 +119,6 @@ def submit_block(new_block):
     print("New block submitted to the chain!")
 
 def run_miner():
-    global block_height, miner_block, miner_block_hash
     block_height = 0
     while True:
         if block_height != 0:
