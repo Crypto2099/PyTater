@@ -16,10 +16,7 @@ all_miners = [miner_id]
 previous_block_count = 0
 last_block_hash = None
 block_height = None
-starch_balance, block_count = get_status(miner_id)
-pending_blocks = get_pending()
-block_height, last_block, last_block_hash = get_chain_config(block_height)
-miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
+
 
 
 def get_status(miner_id):
@@ -121,7 +118,7 @@ def get_chain_config(block_height):
         return
 
 def solve(last_block_hash, miner_id):
-    color = random_color(last_block_hash)
+    color = random_color(miner_id, last_block_hash)
     print(f"Solving New Block:\nHash: {last_block_hash}\nMiner ID: {miner_id}\nColor: {color}")
     solution = last_block_hash + " " + miner_id + " " + color
     m = hashlib.sha256()
@@ -129,3 +126,10 @@ def solve(last_block_hash, miner_id):
     new_hash = m.hexdigest()
     print(f"Block hash: {new_hash}")
     return {'hash': new_hash, 'color': color, 'miner_id': miner_id}
+
+
+starch_balance, block_count = get_status(miner_id)
+pending_blocks = get_pending()
+block_height, last_block, last_block_hash = get_chain_config(block_height)
+miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
+solved_block = solve(last_block_hash, miner_id)

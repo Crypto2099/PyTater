@@ -13,7 +13,7 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 
-def random_color(block_hash: str):
+def random_color(miner_id, block_hash: str):
     seed = zlib.crc32(bytes(block_hash + miner_id, 'ascii'))
     random.seed(seed)
     random_number = random.randint(0, 16777215)
