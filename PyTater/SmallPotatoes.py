@@ -70,13 +70,12 @@ async def get_chain_config():
             block_height = response['blockchain_size']
             last_block = response['last_block']
             last_block_hash = last_block['hash']
-            print('Time for a new block')
     except:
         return
 
 
 async def get_pending():
-    global block_found, pending_blocks, last_own_block, last_own_block_hash
+    global block_found, pending_blocks, last_own_block, last_own_block_hash, all_blocks
     try:
         async with httpx.AsyncClient() as client:
             res = await client.get('https://starch.one/api/pending_blocks', timeout=10)
@@ -92,6 +91,7 @@ async def get_pending():
     try:
         #print(response)
         if response['pending_blocks']:
+            all_blocks = response
             block_found = False
             pending_blocks = response['pending_blocks']
             for block in pending_blocks:
@@ -108,7 +108,7 @@ async def get_status():
         return
     try:
         async with httpx.AsyncClient() as client:
-            res = await client.get('https://starch.one/api/miner/' + miner_id, timeout=10)
+            res = await client.get(f'https://starch.one/api/miner/{miner_id}', timeout=10)
     except:
         print("Could not fetch status")
         return
@@ -176,6 +176,7 @@ async def submit_block(new_block):
 
 async def run_miner():
     total_runs = 0
+    await startup()
     while True:
         total_runs += 1
         await get_status()
@@ -184,5 +185,11 @@ async def run_miner():
         if print_run_total:
             print(f'Total Runs {total_runs}')
         await asyncio.sleep(30)
+
+
+async def startup():
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'https://starch.one/miner?miner={miner_id}', timeout=10)
+    return
 
 asyncio.run(run_miner())
