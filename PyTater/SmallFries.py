@@ -98,7 +98,6 @@ def get_chain_config(block_height):
         else:
             return block_height, last_block, last_block_hash
     except:
-        print('past 3')
         return block_height, last_block, last_block_hash
 
 def solve(last_block_hash, miner_id):
