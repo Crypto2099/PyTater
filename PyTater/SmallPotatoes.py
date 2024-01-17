@@ -180,6 +180,6 @@ async def run_miner():
         await mine_block()
         if print_run_total:
             print(f'Total Runs {total_runs}')
-        await asyncio.sleep(20)
+        await asyncio.sleep(30)
 
 asyncio.run(run_miner())
