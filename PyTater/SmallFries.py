@@ -10,8 +10,8 @@ from time import sleep
 
 load_dotenv()
 
-miner_id = os.getenv('miner_id')
-all_miners = [miner_id]
+miner_id_1 = os.getenv('miner_id')
+all_miners = [miner_id_1]
 
 
 
@@ -121,20 +121,24 @@ def submit_block(new_block):
 def run_miner():
     global block_height, miner_block, miner_block_hash
     block_height = 0
-    starch_balance, block_count = get_status(miner_id)
     while True:
         if block_height != 0:
             print(f'block height: {block_height}')
         current_block_height, current_block, current_block_hash = get_chain_config(block_height)
         if current_block_height > block_height:
             block_height = current_block_height
-            new_block = solve(current_block_hash, miner_id)
-            submit_block(new_block)
+            for miner_id in all_miners:
+                if block_height != 0 and block_height % 10 == 0:
+                    starch_balance, block_count = get_status(miner_id)
+                    print(f'Miner Stats for Miner ID #{miner_id}:\nStarch Balance: {starch_balance}\nBlock Count: {block_count}')
+                new_block = solve(current_block_hash, miner_id)
+                submit_block(new_block)
+                sleep(10)
             pending_blocks = get_pending()
             if len(pending_blocks) == 0:
                 sleep(10)
                 continue
             miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
-        sleep(45)
+        sleep(35)
 
 run_miner()
