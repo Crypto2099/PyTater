@@ -105,7 +105,7 @@ def get_chain_config(block_height):
         return None, None, None
     try:
         response = res.json()
-    except json.decoder.JSONDecodeError:
+    except:
         print("Could not decode configuration!")
         return None, None, None
     try:
