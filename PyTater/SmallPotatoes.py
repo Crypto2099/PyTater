@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 miner_id = os.getenv('miner_id')
-print_run_total = False
 
 class colors:
     FAIL = '\033[91m'
@@ -46,7 +45,6 @@ pending_blocks = None
 if miner_id == None:
     miner_id = input("Enter miner id to mine with: ")
 
-run_start = datetime.now()
 
 
 
@@ -75,7 +73,7 @@ async def get_chain_config():
 
 
 async def get_pending():
-    global block_found, pending_blocks, last_own_block, last_own_block_hash, all_blocks
+    global pending_blocks, last_own_block, last_own_block_hash, block_found
     try:
         async with httpx.AsyncClient() as client:
             res = await client.get('https://starch.one/api/pending_blocks', timeout=10)
@@ -85,22 +83,16 @@ async def get_pending():
     try:
         response = res.json()
     except json.decoder.JSONDecodeError:
-        #print(res.status_code)
         print(f"Could not decode pending!")
         return
-    try:
-        #print(response)
-        if response['pending_blocks']:
-            all_blocks = response
-            block_found = False
-            pending_blocks = response['pending_blocks']
-            for block in pending_blocks:
-                if block['miner_id'] == miner_id:
+    if len(response.get('pending_blocks', [])) != 0:
+        block_found = False
+        pending_blocks = response['pending_blocks']
+        for block in pending_blocks:
+            if block['miner_id'] == miner_id:
                     block_found = True
                     last_own_block = block
                     last_own_block_hash = block['previous_hash']
-    except:
-        return
 
 async def get_status():
     global starch_balance, block_count, starting_blocks, valid_miner, miner_id
@@ -176,7 +168,7 @@ async def submit_block(new_block):
 
 async def run_miner():
     total_runs = 0
-    await startup()
+    #await startup()
     while True:
         total_runs += 1
         await get_status()
