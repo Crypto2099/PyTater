@@ -174,8 +174,6 @@ async def run_miner():
         await get_status()
         await get_pending()
         await mine_block()
-        if print_run_total:
-            print(f'Total Runs {total_runs}')
         await asyncio.sleep(30)
 
 
