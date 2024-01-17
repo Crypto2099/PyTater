@@ -66,9 +66,11 @@ async def get_chain_config():
         print("Could not decode configuration!")
         return
     try:
-        block_height = response['blockchain_size']
-        last_block = response['last_block']
-        last_block_hash = last_block['hash']
+        if response['blockchain_size'] > block_height:
+            block_height = response['blockchain_size']
+            last_block = response['last_block']
+            last_block_hash = last_block['hash']
+            print('Time for a new block')
     except:
         return
 
