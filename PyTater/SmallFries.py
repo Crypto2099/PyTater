@@ -69,14 +69,7 @@ def get_miner_blocks(miner_id, pending_blocks):
 
 
 
-def mine_block(miner_block, last_block_hash):
-    print("Unearthing $STRCH treasures with potato prowess... Mining spudtastic crypto gold.")
-    if miner_block == None or last_block_hash == None:
-    #if miner_block['previous_hash'] == last_block_hash:
-        print(f"My Last Block: (Hash: {last_own_block['previous_hash']}, Color: {last_own_block['color']})")
-        print("We should mine a block!")
-        new_block = solve(last_block_hash)
-        submit_block(new_block)
+
 
 
 async def get_chain_config(block_height):
@@ -116,13 +109,15 @@ def solve(last_block_hash, miner_id):
     return {'hash': new_hash, 'color': color, 'miner_id': miner_id}
 
 async def submit_block(new_block):
+    print("Unearthing $STRCH treasures with potato prowess... Mining spudtastic crypto gold.")
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
     except:
         print("Could not submit block?!")
-        return
+        return False
     print("New block submitted to the chain!")
+    return True
 
 async def run_miner():
     total_runs = 0
@@ -149,9 +144,12 @@ async def run_miner():
                 miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
                 if miner_block is None:
                     new_block = solve(current_block_hash, miner_id)
-                    await submit_block(new_block)
+                    while True:
+                        submit_success = await submit_block(new_block)
+                        if not submit_success:
+                            await asyncio.sleep(10)
+                        break
                     submitted_blocks += 1
-                    await asyncio.sleep(10)
                     if block_height != 0 and block_height % 10 == 0:
                         starch_balance, block_count = await get_status(miner_id)
                         print(f'Miner Stats for Miner ID #{miner_id}:\nStarch Balance: {starch_balance}\nBlock Count: {block_count}')
