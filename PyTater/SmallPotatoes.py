@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 miner_id = os.getenv('miner_id')
+print_run_total = False
 
 class colors:
     FAIL = '\033[91m'
@@ -177,7 +178,8 @@ async def run_miner():
         await get_status()
         await get_pending()
         await mine_block()
-        print(f'Total Runs {total_runs}')
+        if print_run_total:
+            print(f'Total Runs {total_runs}')
         await asyncio.sleep(20)
 
 asyncio.run(run_miner())
