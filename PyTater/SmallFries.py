@@ -88,14 +88,17 @@ def get_chain_config(block_height):
         response = res.json()
     except:
         print("Could not decode configuration!")
-        return block_height, None, None
+        return block_height, block_height, last_block, last_block_hash
     try:
-        if response['blockchain_size'] > block_height:
+        if response.get('blockchain_size', 0) > block_height:
             block_height = response['blockchain_size']
             last_block = response['last_block']
             last_block_hash = last_block['hash']
             return block_height, last_block, last_block_hash
+        else:
+            return block_height, last_block, last_block_hash
     except:
+        print('past 3')
         return block_height, last_block, last_block_hash
 
 def solve(last_block_hash, miner_id):
@@ -129,6 +132,9 @@ def run_miner():
             new_block = solve(current_block_hash, miner_id)
             submit_block(new_block)
             pending_blocks = get_pending()
+            if len(pending_blocks) == 0:
+                sleep(10)
+                continue
             miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
         sleep(45)
 
