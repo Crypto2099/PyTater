@@ -1,5 +1,5 @@
 import random
-
+import zlib
 
 class Colors:
     FAIL = '\033[91m'
