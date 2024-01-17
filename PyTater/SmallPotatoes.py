@@ -84,6 +84,7 @@ async def get_pending():
     try:
         response = res.json()
     except json.decoder.JSONDecodeError:
+        print(res.text)
         print(f"Could not decode pending!")
         return
     try:
