@@ -88,6 +88,7 @@ async def get_pending():
         print(f"Could not decode pending!")
         return
     try:
+        print(response)
         if response['pending_blocks']:
             block_found = False
             pending_blocks = response['pending_blocks']
