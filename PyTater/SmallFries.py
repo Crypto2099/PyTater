@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import httpx
 import json
@@ -19,9 +20,10 @@ all_miners = [miner_id_1]
 
 
 
-def get_status(miner_id):
+async def get_status(miner_id):
     try:
-        response = httpx.get(f'https://starch.one/api/miner/{miner_id}', timeout=10)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f'https://starch.one/api/miner/{miner_id}', timeout=10)
     except:
         print("Could not fetch status")
         return None, None
@@ -37,9 +39,10 @@ def get_status(miner_id):
     except:
         return None, None
 
-def get_pending():
+async def get_pending():
     try:
-        res = httpx.get('https://starch.one/api/pending_blocks', timeout=10)
+        async with httpx.AsyncClient() as client:
+            res = await client.get('https://starch.one/api/pending_blocks', timeout=10)
     except:
         print("Could not fetch pending!")
         return []
@@ -75,11 +78,12 @@ def mine_block(miner_block, last_block_hash):
         submit_block(new_block)
 
 
-def get_chain_config(block_height):
+async def get_chain_config(block_height):
     last_block, last_block_hash = None, None
     # logging.info("Getting chain config...")
     try:
-        res = httpx.get('https://starch.one/api/blockchain_config', timeout=10)
+        async with httpx.AsyncClient() as client:
+            res = await client.get('https://starch.one/api/blockchain_config', timeout=10)
     except:
         # 15639bc8e9...974951272c
         print("Could not fetch configuration!")
@@ -110,34 +114,35 @@ def solve(last_block_hash, miner_id):
     print(f"Block hash: {new_hash}")
     return {'hash': new_hash, 'color': color, 'miner_id': miner_id}
 
-def submit_block(new_block):
+async def submit_block(new_block):
     try:
-        resp = httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
+        async with httpx.AsyncClient() as client:
+            resp = await client.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
     except:
         print("Could not submit block?!")
         return
     print("New block submitted to the chain!")
 
-def run_miner():
+async def run_miner():
     block_height = 0
     while True:
         if block_height != 0:
             print(f'block height: {block_height}')
-        current_block_height, current_block, current_block_hash = get_chain_config(block_height)
+        current_block_height, current_block, current_block_hash = await get_chain_config(block_height)
         if current_block_height > block_height:
             block_height = current_block_height
             for miner_id in all_miners:
                 if block_height != 0 and block_height % 10 == 0:
-                    starch_balance, block_count = get_status(miner_id)
+                    starch_balance, block_count = await get_status(miner_id)
                     print(f'Miner Stats for Miner ID #{miner_id}:\nStarch Balance: {starch_balance}\nBlock Count: {block_count}')
                 new_block = solve(current_block_hash, miner_id)
-                submit_block(new_block)
-                sleep(10)
-            pending_blocks = get_pending()
+                await submit_block(new_block)
+                await asyncio.sleep(10)
+            pending_blocks = await get_pending()
             if len(pending_blocks) == 0:
-                sleep(10)
+                await asyncio.sleep(10)
                 continue
             miner_block, miner_block_hash = get_miner_blocks(miner_id, pending_blocks)
-        sleep(35)
+        await asyncio.sleep(35)
 
-run_miner()
+asyncio.run(run_miner())
