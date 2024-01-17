@@ -133,7 +133,7 @@ async def run_miner():
             break
         if current_block_height > block_height:
             block_height = current_block_height
-            print(f'block height: {block_height}')
+            print(f'Block Height: {block_height}')
             while True:
                 pending_blocks = await get_pending()
                 if len(pending_blocks) == 0:
