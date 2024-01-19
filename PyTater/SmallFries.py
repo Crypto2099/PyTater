@@ -12,8 +12,9 @@ from time import sleep
 
 load_dotenv()
 
-miner_id_1 = os.getenv('miner_id')
-all_miners = [miner_id_1]
+miner_id_1 = os.getenv('miner_id_1')
+miner_id_2 = os.getenv('miner_id_2')
+all_miners = [miner_id_1, miner_id_2]
 
 
 
