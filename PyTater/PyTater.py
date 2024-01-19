@@ -8,11 +8,17 @@ import textwrap
 import zlib
 from datetime import datetime
 
-import requests
+import httpx
 import signal
 import sys
 import threading
 import time
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+env_miner_id = os.getenv('miner_id')
 
 N = []
 for i, n in enumerate([47, 68, 40, 40, 40, 21]):
@@ -219,8 +225,8 @@ class PyTater:
         # logging.info("Getting chain config...")
         self.errors['config'] = None
         try:
-            res = requests.get('https://starch.one/api/blockchain_config')
-        except TimeoutError:
+            res = httpx.get('https://starch.one/api/blockchain_config', timeout=10)
+        except httpx.ReadTimeout or httpx.ConnectTimeout or httpx.Timeout:
             # 15639bc8e9...974951272c
             self.errors['config'] = "Could not fetch configuration!"
             if self.pretty_mode is False or self.debug_mode:
@@ -249,8 +255,8 @@ class PyTater:
     def get_pending(self):
         self.errors['pending'] = None
         try:
-            res = requests.get('https://starch.one/api/pending_blocks')
-        except TimeoutError:
+            res = httpx.get('https://starch.one/api/pending_blocks', timeout=10)
+        except:
             self.errors['pending'] = "Could not fetch pending!"
             return
 
@@ -278,8 +284,8 @@ class PyTater:
             return
 
         try:
-            res = requests.get('https://starch.one/api/miner/' + self.miner_id)
-        except TimeoutError:
+            res = httpx.get('https://starch.one/api/miner/' + self.miner_id, timeout=10)
+        except:
             self.errors['status'] = "Could not fetch status"
             return
 
@@ -366,8 +372,8 @@ class PyTater:
     def submit_block(self, new_block):
         self.errors['submit'] = None
         try:
-            requests.post('https://starch.one/api/submit_block', json=new_block)
-        except TimeoutError:
+            httpx.post('https://starch.one/api/submit_block', json=new_block, timeout=10)
+        except:
             self.errors['submit'] = "Could not submit block?!"
             return
 
@@ -438,7 +444,10 @@ def run(miner_id, pretty_mode, debug_mode):
     running_sync.start()
 
     while miner.valid_miner is False:
-        miner.miner_id = input("Enter your Miner ID: ")
+        if env_miner_id == None:
+            miner.miner_id = input("Enter your Miner ID: ")
+        else:
+            miner.miner_id = env_miner_id
         miner.get_status()
 
     do_mine.set()
