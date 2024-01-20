@@ -14,7 +14,8 @@ load_dotenv()
 
 miner_id_1 = os.getenv('miner_id_1')
 miner_id_2 = os.getenv('miner_id_2')
-all_miners = [miner_id_1, miner_id_2]
+miner_id_3 = os.getenv('miner_id_3')
+all_miners = [miner_id_1, miner_id_2, miner_id_3]
 
 
 
