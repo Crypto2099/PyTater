@@ -12,11 +12,25 @@ from time import sleep
 
 load_dotenv()
 
-miner_id_1 = os.getenv('miner_id_1')
-miner_id_2 = os.getenv('miner_id_2')
-miner_id_3 = os.getenv('miner_id_3')
-miner_id_4 = os.getenv('miner_id_4')
-all_miners = [miner_id_1, miner_id_2, miner_id_3, miner_id_4]
+
+
+def get_miners():
+    all_miners = []
+    miner_id_1 = os.getenv('miner_id_1')
+    miner_id_2 = os.getenv('miner_id_2')
+    miner_id_3 = os.getenv('miner_id_3')
+    miner_id_4 = os.getenv('miner_id_4')
+    miner_id_5 = os.getenv('miner_id_5')
+    potential_miners = [miner_id_1, miner_id_2, miner_id_3, miner_id_4, miner_id_5]
+    for miner in potential_miners:
+        if miner is not None:
+            all_miners.append(miner)
+    return all_miners
+
+
+all_miners = get_miners()
+
+
 
 
 
